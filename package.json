@@ -1,0 +1,27 @@
+{
+  "name": "sprite-roguelike",
+  "version": "0.1.0",
+  "description": "像素风格的肉鸽宝可梦游戏",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "game",
+    "roguelike",
+    "pixel",
+    "phaser"
+  ],
+  "author": "zhangjiadi225",
+  "license": "MIT",
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
