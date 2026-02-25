@@ -5,6 +5,8 @@ export async function initGame(parent: HTMLElement) {
   const { default: MenuScene } = await import('./scenes/MenuScene');
   const { default: GameScene } = await import('./scenes/GameScene');
   const { default: BattleScene } = await import('./scenes/BattleScene');
+  const { default: CaptureScene } = await import('./scenes/CaptureScene');
+  const { default: ShopScene } = await import('./scenes/ShopScene');
   const { default: FusionDemoScene } = await import('./scenes/FusionDemoScene');
 
   const config: Phaser.Types.Core.GameConfig = {
@@ -21,7 +23,7 @@ export async function initGame(parent: HTMLElement) {
         debug: false
       }
     },
-    scene: [BootScene, MenuScene, GameScene, BattleScene, FusionDemoScene]
+    scene: [BootScene, MenuScene, GameScene, BattleScene, CaptureScene, ShopScene, FusionDemoScene]
   };
 
   return new Phaser.Game(config);
