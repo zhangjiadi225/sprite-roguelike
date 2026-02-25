@@ -1,10 +1,12 @@
-import Phaser from 'phaser';
-import BootScene from './scenes/BootScene';
-import MenuScene from './scenes/MenuScene';
-import GameScene from './scenes/GameScene';
-import FusionDemoScene from './scenes/FusionDemoScene';
+export async function initGame(parent: HTMLElement) {
+  // 动态导入 Phaser（只在客户端）
+  const Phaser = (await import('phaser')).default;
+  const { default: BootScene } = await import('./scenes/BootScene');
+  const { default: MenuScene } = await import('./scenes/MenuScene');
+  const { default: GameScene } = await import('./scenes/GameScene');
+  const { default: BattleScene } = await import('./scenes/BattleScene');
+  const { default: FusionDemoScene } = await import('./scenes/FusionDemoScene');
 
-export function initGame(parent: HTMLElement): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: 800,
@@ -19,7 +21,7 @@ export function initGame(parent: HTMLElement): Phaser.Game {
         debug: false
       }
     },
-    scene: [BootScene, MenuScene, GameScene, FusionDemoScene]
+    scene: [BootScene, MenuScene, GameScene, BattleScene, FusionDemoScene]
   };
 
   return new Phaser.Game(config);
