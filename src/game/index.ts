@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene';
 import MenuScene from './scenes/MenuScene';
 import GameScene from './scenes/GameScene';
+import FusionDemoScene from './scenes/FusionDemoScene';
 
 export function initGame(parent: HTMLElement): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
@@ -18,7 +19,7 @@ export function initGame(parent: HTMLElement): Phaser.Game {
         debug: false
       }
     },
-    scene: [BootScene, MenuScene, GameScene]
+    scene: [BootScene, MenuScene, GameScene, FusionDemoScene]
   };
 
   return new Phaser.Game(config);
