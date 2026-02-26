@@ -115,7 +115,9 @@ export class UIHelper {
         scaleY: 0.95,
         duration: 50,
         yoyo: true,
-        onComplete: onClick
+        onComplete: () => {
+          onClick();
+        }
       });
     });
     
