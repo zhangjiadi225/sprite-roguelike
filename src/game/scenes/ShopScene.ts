@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { InventorySystem, ITEMS, InventoryItem } from '../systems/InventorySystem';
+import { InventorySystem, ITEMS } from '../systems/InventorySystem';
+import { UITheme, UIHelper } from '../ui/UITheme';
 
 export default class ShopScene extends Phaser.Scene {
   private inventory!: InventorySystem;
   private onShopClose?: () => void;
+  private goldText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'ShopScene' });
@@ -20,15 +22,26 @@ export default class ShopScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main;
 
-    // 背景
-    this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e);
+    // 渐变背景
+    const graphics = this.add.graphics();
+    graphics.fillGradientStyle(
+      Phaser.Display.Color.HexStringToColor('#134E5E').color,
+      Phaser.Display.Color.HexStringToColor('#71B280').color,
+      Phaser.Display.Color.HexStringToColor('#134E5E').color,
+      Phaser.Display.Color.HexStringToColor('#71B280').color,
+      1
+    );
+    graphics.fillRect(0, 0, width, height);
 
     // 标题
-    this.add.text(width / 2, 40, '🛒 商店', {
+    const title = this.add.text(width / 2, 40, '🛒 商店', {
       fontSize: '32px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
+      color: '#FFFFFF',
+      fontFamily: '"Press Start 2P", monospace',
+      stroke: '#000000',
+      strokeThickness: 4
+    });
+    title.setOrigin(0.5);
 
     // 金币显示
     this.displayGold();
@@ -37,34 +50,40 @@ export default class ShopScene extends Phaser.Scene {
     this.displayShopItems();
 
     // 关闭按钮
-    const closeButton = this.add.text(width - 30, 30, '✕', {
-      fontSize: '32px',
-      color: '#ff0000'
-    });
-    closeButton.setOrigin(0.5);
-    closeButton.setInteractive({ useHandCursor: true });
-
-    closeButton.on('pointerdown', () => {
-      if (this.onShopClose) {
-        this.onShopClose();
-      }
-      this.scene.stop();
-    });
+    UIHelper.createPixelButton(
+      this,
+      width - 70,
+      30,
+      '关闭',
+      () => {
+        if (this.onShopClose) {
+          this.onShopClose();
+        }
+        this.scene.stop();
+      },
+      UITheme.colors.danger
+    ).setScale(0.6);
   }
 
   private displayGold() {
     const { width } = this.cameras.main;
     
-    this.add.text(width / 2, 80, `💰 金币: ${this.inventory.getGold()}`, {
-      fontSize: '20px',
-      color: '#ffaa00'
-    }).setOrigin(0.5);
+    const goldBg = this.add.rectangle(width / 2, 85, 200, 40, 
+      Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 0.8);
+    goldBg.setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(UITheme.colors.accent).color);
+
+    this.goldText = this.add.text(width / 2, 85, `💰 ${this.inventory.getGold()}`, {
+      fontSize: '18px',
+      color: UITheme.colors.accent,
+      fontFamily: '"Press Start 2P", monospace'
+    });
+    this.goldText.setOrigin(0.5);
   }
 
   private displayShopItems() {
-    const { width, height } = this.cameras.main;
-    const startY = 130;
-    const itemHeight = 80;
+    const { width } = this.cameras.main;
+    const startY = 140;
+    const itemHeight = 90;
 
     const shopItems = [
       { ...ITEMS.POTION, price: 50 },
@@ -77,54 +96,68 @@ export default class ShopScene extends Phaser.Scene {
 
     shopItems.forEach((item, index) => {
       const y = startY + index * itemHeight;
-
-      // 背景
-      const bg = this.add.rectangle(width / 2, y, width - 60, 70, 0x333333);
-
-      // 物品名称
-      this.add.text(50, y - 20, item.name, {
-        fontSize: '18px',
-        color: '#ffffff'
-      });
-
-      // 物品描述
-      this.add.text(50, y + 5, item.description, {
-        fontSize: '14px',
-        color: '#aaaaaa'
-      });
-
-      // 价格
-      const priceText = this.add.text(width - 200, y, `💰 ${item.price}`, {
-        fontSize: '16px',
-        color: '#ffaa00'
-      });
-
-      // 购买按钮
-      const canAfford = this.inventory.getGold() >= item.price;
-      const buyButton = this.add.text(width - 80, y, '购买', {
-        fontSize: '16px',
-        color: canAfford ? '#00ff00' : '#666666',
-        backgroundColor: canAfford ? '#333333' : '#222222',
-        padding: { x: 15, y: 8 }
-      });
-      buyButton.setOrigin(0.5);
-
-      if (canAfford) {
-        buyButton.setInteractive({ useHandCursor: true });
-
-        buyButton.on('pointerover', () => {
-          buyButton.setStyle({ backgroundColor: '#444444' });
-        });
-
-        buyButton.on('pointerout', () => {
-          buyButton.setStyle({ backgroundColor: '#333333' });
-        });
-
-        buyButton.on('pointerdown', () => {
-          this.buyItem(item, item.price);
-        });
-      }
+      this.createShopItem(width / 2, y, item, item.price);
     });
+  }
+
+  private createShopItem(x: number, y: number, item: any, price: number) {
+    const canAfford = this.inventory.getGold() >= price;
+
+    // 商品卡片
+    const card = UIHelper.createCard(this, x - 280, y - 35, 560, 80);
+
+    // 商品图标
+    const icon = this.add.text(x - 240, y, this.getItemIcon(item.type), {
+      fontSize: '32px'
+    });
+    icon.setOrigin(0.5);
+
+    // 商品名称
+    const name = this.add.text(x - 180, y - 15, item.name, {
+      fontSize: '16px',
+      color: UITheme.colors.textPrimary,
+      fontFamily: '"Press Start 2P", monospace'
+    });
+
+    // 商品描述
+    const desc = this.add.text(x - 180, y + 10, item.description, {
+      fontSize: '12px',
+      color: UITheme.colors.textSecondary
+    });
+
+    // 价格
+    const priceText = this.add.text(x + 120, y, `💰 ${price}`, {
+      fontSize: '14px',
+      color: UITheme.colors.accent,
+      fontFamily: '"Press Start 2P", monospace'
+    });
+    priceText.setOrigin(0, 0.5);
+
+    // 购买按钮
+    const buyButton = UIHelper.createPixelButton(
+      this,
+      x + 220,
+      y,
+      '购买',
+      () => this.buyItem(item, price),
+      canAfford ? UITheme.colors.success : UITheme.colors.textMuted
+    );
+    buyButton.setScale(0.5);
+
+    if (!canAfford) {
+      buyButton.setAlpha(0.5);
+      buyButton.disableInteractive();
+    }
+  }
+
+  private getItemIcon(type: string): string {
+    const icons: Record<string, string> = {
+      potion: '🧪',
+      ball: '⚾',
+      fusion: '💎',
+      boost: '⭐'
+    };
+    return icons[type] || '📦';
   }
 
   private buyItem(item: any, price: number) {
@@ -134,19 +167,14 @@ export default class ShopScene extends Phaser.Scene {
         quantity: 1
       });
 
-      // 显示购买成功提示
-      const { width, height } = this.cameras.main;
-      const successText = this.add.text(width / 2, height / 2, `购买成功！\n${item.name} x1`, {
-        fontSize: '24px',
-        color: '#00ff00',
-        backgroundColor: '#000000',
-        padding: { x: 20, y: 10 },
-        align: 'center'
-      });
-      successText.setOrigin(0.5);
+      // 更新金币显示
+      this.goldText.setText(`💰 ${this.inventory.getGold()}`);
 
+      // 显示购买成功
+      UIHelper.showToast(this, `购买成功！${item.name} x1`);
+
+      // 刷新商店
       this.time.delayedCall(1000, () => {
-        successText.destroy();
         this.scene.restart();
       });
     }
