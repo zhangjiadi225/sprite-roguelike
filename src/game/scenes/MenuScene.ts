@@ -68,7 +68,15 @@ export default class MenuScene extends Phaser.Scene {
       width / 2,
       buttonY,
       '开始游戏',
-      () => this.scene.start('GameScene'),
+      () => {
+        // 创建初始精灵
+        const { getAllBaseSprites } = require('../data/baseSprites');
+        const baseSprites = getAllBaseSprites();
+        const playerSprite = baseSprites[0]; // 默认选择火狐
+        playerSprite.level = 5;
+        
+        this.scene.start('StageSelectScene', { playerTeam: [playerSprite] });
+      },
       UITheme.colors.success
     );
 
