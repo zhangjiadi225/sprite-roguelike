@@ -7,18 +7,23 @@ export default function Home() {
   const gameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let gameInstance: any = null;
     if (gameRef.current) {
-      const game = initGame(gameRef.current);
-      
+      initGame(gameRef.current).then(game => {
+        gameInstance = game;
+      });
+
       return () => {
-        game.destroy(true);
+        if (gameInstance) {
+          gameInstance.destroy(true);
+        }
       };
     }
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-900">
-      <div ref={gameRef} id="game-container" />
+    <main className="w-screen h-screen m-0 p-0 overflow-hidden bg-[#11111B]">
+      <div ref={gameRef} id="game-container" className="w-full h-full" />
     </main>
   );
 }

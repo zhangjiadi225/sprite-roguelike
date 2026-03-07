@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { AssetGenerator } from '../systems/AssetGenerator';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +12,8 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
+    console.log('BootScene: 生成资源中...');
+    AssetGenerator.generateBaseAssets(this);
     console.log('BootScene: 启动完成');
     this.scene.start('MenuScene');
   }

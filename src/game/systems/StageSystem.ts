@@ -1,3 +1,5 @@
+import { Sprite } from '../data/types';
+
 // 关卡系统
 export interface Stage {
   id: string;
@@ -56,22 +58,22 @@ export interface BattleRewards {
   captured?: Sprite;
 }
 
-// 预定义关卡
+// 预定义关卡 - 等级与关卡序号对齐
 export const STAGES: Stage[] = [
   {
     id: 'stage_1',
     name: '新手草原',
     level: 1,
-    description: '适合新手训练的草原，有弱小的精灵出没',
+    description: '适合新手训练的草原，有 Lv.1 精灵出没',
     enemies: [
-      { spriteId: 'fire_fox', level: 3, probability: 0.4 },
-      { spriteId: 'electric_mouse', level: 3, probability: 0.3 },
-      { spriteId: 'ice_rabbit', level: 3, probability: 0.3 }
+      { spriteId: 'fire_fox', level: 1, probability: 0.4 },
+      { spriteId: 'electric_mouse', level: 1, probability: 0.3 },
+      { spriteId: 'ice_rabbit', level: 1, probability: 0.3 }
     ],
     rewards: {
-      baseExp: 50,
+      baseExp: 100,
       baseGold: 30,
-      captureChance: 0.3
+      captureChance: 0.4
     },
     unlocked: true
   },
@@ -79,16 +81,16 @@ export const STAGES: Stage[] = [
     id: 'stage_2',
     name: '幽暗森林',
     level: 2,
-    description: '阴暗的森林，有毒属性精灵出没',
+    description: 'Lv.2 精灵的森林',
     enemies: [
-      { spriteId: 'poison_snake', level: 5, probability: 0.5 },
-      { spriteId: 'fire_fox', level: 5, probability: 0.3 },
-      { spriteId: 'void_phantom', level: 5, probability: 0.2 }
+      { spriteId: 'poison_snake', level: 2, probability: 0.5 },
+      { spriteId: 'fire_fox', level: 2, probability: 0.3 },
+      { spriteId: 'void_phantom', level: 2, probability: 0.2 }
     ],
     rewards: {
-      baseExp: 80,
+      baseExp: 200,
       baseGold: 50,
-      captureChance: 0.25
+      captureChance: 0.35
     },
     unlocked: false
   },
@@ -96,15 +98,15 @@ export const STAGES: Stage[] = [
     id: 'stage_3',
     name: '冰封雪地',
     level: 3,
-    description: '寒冷的雪地，冰属性精灵的栖息地',
+    description: 'Lv.3 精灵的雪域',
     enemies: [
-      { spriteId: 'ice_rabbit', level: 8, probability: 0.6 },
-      { spriteId: 'electric_mouse', level: 8, probability: 0.4 }
+      { spriteId: 'ice_rabbit', level: 3, probability: 0.6 },
+      { spriteId: 'electric_mouse', level: 3, probability: 0.4 }
     ],
     rewards: {
-      baseExp: 120,
+      baseExp: 300,
       baseGold: 80,
-      captureChance: 0.2
+      captureChance: 0.3
     },
     unlocked: false
   },
@@ -112,15 +114,15 @@ export const STAGES: Stage[] = [
     id: 'stage_4',
     name: '雷电高原',
     level: 4,
-    description: '雷电交加的高原，电属性精灵聚集地',
+    description: 'Lv.4 精灵的领域',
     enemies: [
-      { spriteId: 'electric_mouse', level: 10, probability: 0.7 },
-      { spriteId: 'void_phantom', level: 10, probability: 0.3 }
+      { spriteId: 'electric_mouse', level: 4, probability: 0.7 },
+      { spriteId: 'void_phantom', level: 4, probability: 0.3 }
     ],
     rewards: {
-      baseExp: 150,
+      baseExp: 400,
       baseGold: 100,
-      captureChance: 0.15
+      captureChance: 0.25
     },
     unlocked: false
   },
@@ -128,17 +130,18 @@ export const STAGES: Stage[] = [
     id: 'stage_5',
     name: '虚空裂隙',
     level: 5,
-    description: '神秘的虚空裂隙，强大的虚空精灵守护',
+    description: 'Lv.5 终极裂隙，隐藏着 Lv.10 强敌',
     enemies: [
-      { spriteId: 'void_phantom', level: 15, probability: 1.0 }
+      { spriteId: 'void_phantom', level: 5, probability: 0.8 },
+      { spriteId: 'boss_void_lord', level: 10, probability: 0.2 }
     ],
     rewards: {
-      baseExp: 300,
-      baseGold: 200,
-      captureChance: 0.1,
+      baseExp: 800,
+      baseGold: 300,
+      captureChance: 0.2,
       firstClearBonus: {
-        exp: 500,
-        gold: 300,
+        exp: 1000,
+        gold: 500,
         items: ['fusion_stone']
       }
     },
@@ -172,7 +175,7 @@ export class StageManager {
   // 标记关卡已通关
   clearStage(stageId: string): void {
     this.clearedStages.add(stageId);
-    
+
     // 解锁下一关
     const currentIndex = this.stages.findIndex(s => s.id === stageId);
     if (currentIndex >= 0 && currentIndex < this.stages.length - 1) {
@@ -185,32 +188,34 @@ export class StageManager {
     return this.clearedStages.has(stageId);
   }
 
-  // 随机生成敌人
+  // 随机生成敌人 - 使用新的线性属性公式
   generateEnemy(stage: Stage): Sprite {
     const rand = Math.random();
     let cumulative = 0;
-    
+
     for (const encounter of stage.enemies) {
       cumulative += encounter.probability;
       if (rand <= cumulative) {
-        // 这里需要根据 spriteId 创建精灵
-        // 暂时返回基础精灵
         const { getBaseSprite } = require('../data/baseSprites');
         const sprite = getBaseSprite(encounter.spriteId);
         if (sprite) {
           sprite.level = encounter.level;
-          // 根据等级调整属性
-          sprite.stats.maxHP = Math.floor(50 + sprite.level * 5);
+          // 线性公式: HP (50 + Lv*50), ATK (10 + Lv*10), DEF (5 + Lv*5)
+          const baseHP = 50 + sprite.level * 50;
+          const baseAtk = 10 + sprite.level * 10;
+          const baseDef = 5 + sprite.level * 5;
+          const baseSpd = 10 + sprite.level * 5;
+
+          sprite.stats.maxHP = Math.floor(baseHP);
           sprite.stats.hp = sprite.stats.maxHP;
-          sprite.stats.atk = Math.floor(10 + sprite.level * 2);
-          sprite.stats.def = Math.floor(8 + sprite.level * 1.5);
-          sprite.stats.spd = Math.floor(12 + sprite.level * 1.8);
+          sprite.stats.atk = Math.floor(baseAtk);
+          sprite.stats.def = Math.floor(baseDef);
+          sprite.stats.spd = Math.floor(baseSpd);
         }
         return sprite;
       }
     }
-    
-    // 默认返回第一个
+
     const { getBaseSprite } = require('../data/baseSprites');
     return getBaseSprite(stage.enemies[0].spriteId);
   }
@@ -226,7 +231,7 @@ export class StageManager {
     }
 
     const isFirstClear = !this.isCleared(stage.id);
-    
+
     let exp = stage.rewards.baseExp;
     let gold = stage.rewards.baseGold;
 

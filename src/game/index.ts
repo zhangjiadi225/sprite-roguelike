@@ -6,13 +6,18 @@ export async function initGame(parent: HTMLElement) {
   const { default: StageSelectScene } = await import('./scenes/StageSelectScene');
   const { default: CombatScene } = await import('./scenes/CombatScene');
   const { default: FusionDemoScene } = await import('./scenes/FusionDemoScene');
+  const { default: HomeScene } = await import('./scenes/HomeScene');
 
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: window.innerWidth,
+      height: window.innerHeight
+    },
     parent,
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#11111B', // 更新为 UITheme 中的极暗深空蓝
     pixelArt: true,
     physics: {
       default: 'arcade',
@@ -21,7 +26,7 @@ export async function initGame(parent: HTMLElement) {
         debug: false
       }
     },
-    scene: [BootScene, MenuScene, StageSelectScene, CombatScene, FusionDemoScene]
+    scene: [BootScene, MenuScene, HomeScene, StageSelectScene, CombatScene, FusionDemoScene]
   };
 
   return new Phaser.Game(config);

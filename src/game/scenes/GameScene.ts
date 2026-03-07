@@ -64,10 +64,10 @@ export default class GameScene extends Phaser.Scene {
 
   private createTopBar() {
     const { width } = this.cameras.main;
-    
+
     // 顶部栏背景
     const topBar = UIHelper.createCard(this, 0, 0, width, 60);
-    
+
     // 楼层信息
     const floorText = this.add.text(20, 30, `第 ${this.floor.level} 层`, {
       fontSize: '20px',
@@ -75,13 +75,13 @@ export default class GameScene extends Phaser.Scene {
       fontFamily: '"Press Start 2P", monospace'
     });
     floorText.setOrigin(0, 0.5);
-    
+
     // 金币显示
     const goldIcon = this.add.text(width - 150, 30, '💰', {
       fontSize: '24px'
     });
     goldIcon.setOrigin(0, 0.5);
-    
+
     const goldText = this.add.text(width - 120, 30, `${this.inventory.getGold()}`, {
       fontSize: '18px',
       color: UITheme.colors.accent,
@@ -93,7 +93,7 @@ export default class GameScene extends Phaser.Scene {
   private displayCurrentRoom() {
     const { width, height } = this.cameras.main;
     const currentRoom = MapGenerator.getCurrentRoom(this.floor);
-    
+
     if (!currentRoom) return;
 
     const roomY = height * 0.35;
@@ -147,8 +147,17 @@ export default class GameScene extends Phaser.Scene {
         width / 2,
         y,
         '开始战斗',
-        () => this.startBattle(),
+        () => this.startBattle(false),
         UITheme.colors.danger
+      );
+    } else if (room.type === RoomType.BOSS) {
+      UIHelper.createPixelButton(
+        this,
+        width / 2,
+        y,
+        '挑战 Boss',
+        () => this.startBattle(true),
+        UITheme.colors.primary
       );
     } else if (room.type === RoomType.TREASURE) {
       UIHelper.createPixelButton(
@@ -183,24 +192,24 @@ export default class GameScene extends Phaser.Scene {
     mapTitle.setOrigin(0.5);
 
     const availableRooms = MapGenerator.getAvailableRooms(this.floor);
-    
+
     availableRooms.forEach((room, index) => {
       const x = width / 2 - 100 + index * 120;
       const y = mapY + 30;
 
       const button = this.add.container(x, y);
-      
+
       // 背景
-      const bg = this.add.rectangle(0, 0, 100, 70, 
+      const bg = this.add.rectangle(0, 0, 100, 70,
         Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color);
       bg.setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(this.getRoomTypeColor(room.type)).color);
-      
+
       // 图标
       const icon = this.add.text(0, -15, this.getRoomIcon(room.type), {
         fontSize: '24px'
       });
       icon.setOrigin(0.5);
-      
+
       // 名称
       const name = this.add.text(0, 15, this.getRoomTypeName(room.type), {
         fontSize: '10px',
@@ -248,14 +257,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.playerTeam.forEach((sprite, index) => {
       const x = 80 + index * 160;
-      
+
       // 精灵卡片
-      const card = this.add.rectangle(x, teamY, 140, 50, 
+      const card = this.add.rectangle(x, teamY, 140, 50,
         Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 0.8);
       card.setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color);
-      
+
       // 精灵信息
-      const info = this.add.text(x, teamY, 
+      const info = this.add.text(x, teamY,
         `${sprite.name}\nLv.${sprite.level} HP:${sprite.stats.hp}/${sprite.stats.maxHP}`, {
         fontSize: '10px',
         color: UITheme.colors.textPrimary,
@@ -265,21 +274,46 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private startBattle() {
+  private startBattle(isBoss: boolean = false) {
     const baseSprites = getAllBaseSprites();
-    const enemySprite = baseSprites[Math.floor(Math.random() * baseSprites.length)];
-    enemySprite.level = this.floor.level + Math.floor(Math.random() * 3);
+
+    let enemySprite: Sprite;
+
+    if (isBoss) {
+      // 查找并生成 Boss
+      const bosses = baseSprites.filter(s => s.isBoss);
+      if (bosses.length > 0) {
+        enemySprite = bosses[Math.floor(Math.random() * bosses.length)];
+        // Boss 等级随楼层提升更明显
+        enemySprite.level = this.floor.level * 2 + 5;
+      } else {
+        // 后备：如果没有 Boss 数据，则提供强化版普通怪
+        enemySprite = baseSprites.filter(s => !s.isBoss)[0];
+        enemySprite.level = this.floor.level * 2 + 5;
+        enemySprite.name = "狂暴的 " + enemySprite.name;
+        enemySprite.stats.hp *= 2;
+        enemySprite.stats.maxHP *= 2;
+      }
+    } else {
+      // 产生普通怪
+      const normalSprites = baseSprites.filter(s => !s.isBoss);
+      enemySprite = normalSprites[Math.floor(Math.random() * normalSprites.length)];
+      enemySprite.level = this.floor.level + Math.floor(Math.random() * 3);
+    }
 
     this.scene.start('BattleScene', {
       playerTeam: this.playerTeam,
       enemySprite,
+      isBossBattle: isBoss,
       onBattleEnd: (result: any) => {
         if (result.winner === 'player') {
           const currentRoom = MapGenerator.getCurrentRoom(this.floor);
           if (currentRoom) {
             MapGenerator.clearRoom(this.floor, currentRoom.id);
           }
-          this.inventory.addGold(result.rewards.gold);
+          // Boss 奖励倍增在获得具体金币时直接体现，但为了简单复用战斗结算机制，
+          // 当前金币获取直接取 battle result 中的值。
+          this.inventory.addGold(result.rewards ? result.rewards.gold : (isBoss ? 500 : 50));
         }
       }
     });
@@ -289,9 +323,9 @@ export default class GameScene extends Phaser.Scene {
     const gold = Math.floor(50 + Math.random() * 100);
     this.inventory.addGold(gold);
     MapGenerator.clearRoom(this.floor, room.id);
-    
+
     UIHelper.showToast(this, `获得了 ${gold} 金币！`);
-    
+
     this.time.delayedCall(1500, () => {
       this.scene.restart();
     });

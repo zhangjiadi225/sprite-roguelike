@@ -16,18 +16,18 @@ export class BattleSystem {
     defender: Sprite,
     skill: SpriteSkill
   ): number {
-    // 基础伤害 = 技能威力 * (攻击力 / 防御力)
-    const baseDamage = skill.power * (attacker.stats.atk / defender.stats.def);
-    
+    // 极简伤害公式: (攻击力 * 技能威力 / 20) - 防御力
+    const baseDamage = (attacker.stats.atk * skill.power / 20) - defender.stats.def;
+
     // 属性克制倍率
     const effectiveness = getEffectivenessMultiplier(skill.element, defender.element);
-    
-    // 随机系数 (0.85 - 1.0)
-    const randomFactor = 0.85 + Math.random() * 0.15;
-    
+
+    // 随机系数 (0.9 - 1.1)
+    const randomFactor = 0.9 + Math.random() * 0.2;
+
     // 最终伤害
     const finalDamage = Math.floor(baseDamage * effectiveness * randomFactor);
-    
+
     return Math.max(1, finalDamage); // 至少造成1点伤害
   }
 
@@ -45,16 +45,16 @@ export class BattleSystem {
     // 消耗 PP
     skill.pp--;
 
-    // 计算伤害
+    // 计算基础伤害
     const damage = this.calculateDamage(attacker, defender, skill);
     const effectiveness = getEffectivenessMultiplier(skill.element, defender.element);
-    
+
     // 暴击判定 (10% 概率)
     const critical = Math.random() < 0.1;
     const finalDamage = critical ? damage * 1.5 : damage;
 
     // 扣除 HP
-    defender.stats.hp = Math.max(0, defender.stats.hp - finalDamage);
+    defender.stats.hp = Math.max(0, defender.stats.hp - Math.floor(finalDamage));
 
     return { damage: Math.floor(finalDamage), effectiveness, critical };
   }
@@ -62,32 +62,33 @@ export class BattleSystem {
   // 获得经验
   static gainExp(sprite: Sprite, exp: number): boolean {
     sprite.exp += exp;
-    
+
     // 检查是否升级
-    if (sprite.exp >= sprite.expToNext) {
-      return this.levelUp(sprite);
+    let leveledUp = false;
+    while (sprite.exp >= sprite.expToNext && sprite.level < 50) {
+      this.levelUp(sprite);
+      leveledUp = true;
     }
-    
-    return false;
+
+    return leveledUp;
   }
 
-  // 升级
+  // 升级 - 简化为固定加值
   static levelUp(sprite: Sprite): boolean {
-    if (sprite.level >= 50) return false; // 最高等级
+    if (sprite.level >= 50) return false;
 
     sprite.level++;
     sprite.exp -= sprite.expToNext;
-    
-    // 计算新的升级所需经验
-    sprite.expToNext = Math.floor(Math.pow(sprite.level + 1, 2.5) * 10);
 
-    // 属性增长（基于成长值）
-    const growthFactor = sprite.stats.growthValue / 100;
-    sprite.stats.maxHP += Math.floor(5 * growthFactor);
+    // 经验曲线简化: 每级 100 经验
+    sprite.expToNext = 100;
+
+    // 属性增长 (HP+50, ATK+10, DEF+5, SPD+5)
+    sprite.stats.maxHP += 50;
     sprite.stats.hp = sprite.stats.maxHP; // 升级回满血
-    sprite.stats.atk += Math.floor(2 * growthFactor);
-    sprite.stats.def += Math.floor(1.5 * growthFactor);
-    sprite.stats.spd += Math.floor(1.8 * growthFactor);
+    sprite.stats.atk += 10;
+    sprite.stats.def += 5;
+    sprite.stats.spd += 5;
 
     // 恢复所有技能 PP
     sprite.skills.forEach(skill => {
@@ -99,18 +100,17 @@ export class BattleSystem {
 
   // 计算战斗奖励
   static calculateRewards(enemyLevel: number): { exp: number; gold: number } {
-    const exp = Math.floor(enemyLevel * 15 * (1 + Math.random() * 0.2));
-    const gold = Math.floor(enemyLevel * 10 * (1 + Math.random() * 0.3));
+    const exp = enemyLevel * 40; // 简单线性倍率
+    const gold = enemyLevel * 20;
     return { exp, gold };
   }
 
   // 尝试捕捉
   static attemptCapture(sprite: Sprite, ballMultiplier: number = 1.0): boolean {
-    // 捕捉成功率 = (1 - 当前HP/最大HP) * 基础成功率 * 精灵球倍率
     const hpRatio = sprite.stats.hp / sprite.stats.maxHP;
-    const baseRate = 0.3; // 基础30%成功率
-    const captureRate = (1 - hpRatio) * baseRate * ballMultiplier;
-    
+    const baseRate = 0.4; // 基础成功率提高到 40%
+    const captureRate = (1.2 - hpRatio) * baseRate * ballMultiplier;
+
     return Math.random() < captureRate;
   }
 

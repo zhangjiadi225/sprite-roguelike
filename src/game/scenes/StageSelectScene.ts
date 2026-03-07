@@ -31,34 +31,37 @@ export default class StageSelectScene extends Phaser.Scene {
     graphics.fillRect(0, 0, width, height);
 
     // 标题
-    const title = this.add.text(width / 2, 40, '关卡选择', {
-      fontSize: '32px',
+    const title = this.add.text(width / 2, height * 0.1, '选择关卡', {
+      fontSize: '42px',
       color: UITheme.colors.primary,
-      fontFamily: '"Press Start 2P", monospace',
-      stroke: '#000000',
-      strokeThickness: 4
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
+    title.setOrigin(0.5);
+    title.setShadow(0, 4, '#000000', 10, true, true);
     title.setOrigin(0.5);
 
     // 显示关卡列表
     this.displayStages();
 
     // 返回按钮
-    UIHelper.createPixelButton(
+    UIHelper.createModernButton(
       this,
-      70,
-      30,
+      100,
+      50,
       '返回',
       () => this.scene.start('MenuScene'),
-      UITheme.colors.danger
-    ).setScale(0.6);
+      UITheme.colors.danger,
+      120,
+      40
+    );
   }
 
   private displayStages() {
-    const { width } = this.cameras.main;
+    const { width, height } = this.cameras.main;
     const stages = this.stageManager.getStages();
-    const startY = 120;
-    const spacing = 100;
+    const startY = height * 0.25;
+    const spacing = 110;
 
     stages.forEach((stage, index) => {
       const y = startY + index * spacing;
@@ -72,62 +75,69 @@ export default class StageSelectScene extends Phaser.Scene {
     const isCleared = this.stageManager.isCleared(stage.id);
 
     // 卡片背景
-    const card = UIHelper.createCard(this, -280, -40, 560, 85);
+    const card = UIHelper.createCard(this, -300, -45, 600, 90);
     container.add(card);
 
     // 关卡图标
-    const iconBg = this.add.rectangle(-230, 0, 60, 60, 
-      isLocked ? 0x333333 : Phaser.Display.Color.HexStringToColor(UITheme.colors.primary).color, 
-      isLocked ? 0.3 : 0.5
-    );
-    iconBg.setStrokeStyle(2, isLocked ? 0x666666 : Phaser.Display.Color.HexStringToColor(UITheme.colors.primary).color);
+    const iconBg = this.add.graphics();
+    const primaryColorNum = Phaser.Display.Color.HexStringToColor(UITheme.colors.primary).color;
+    iconBg.fillStyle(isLocked ? 0x333333 : primaryColorNum, isLocked ? 0.3 : 0.6);
+    iconBg.fillRoundedRect(-275, -25, 50, 50, 12);
+    iconBg.lineStyle(2, isLocked ? 0x666666 : primaryColorNum, 0.8);
+    iconBg.strokeRoundedRect(-275, -25, 50, 50, 12);
     container.add(iconBg);
 
-    const iconText = this.add.text(-230, 0, isLocked ? '🔒' : isCleared ? '✓' : stage.level.toString(), {
-      fontSize: isLocked ? '24px' : '20px',
-      color: isLocked ? '#666666' : '#FFFFFF',
-      fontFamily: '"Press Start 2P", monospace'
+    const iconText = this.add.text(-250, 0, isLocked ? '🔒' : isCleared ? '✓' : stage.level.toString(), {
+      fontSize: '22px',
+      color: isLocked ? '#888888' : '#FFFFFF',
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
     iconText.setOrigin(0.5);
     container.add(iconText);
 
     // 关卡名称
-    const name = this.add.text(-160, -15, stage.name, {
-      fontSize: '18px',
+    const name = this.add.text(-200, -20, stage.name, {
+      fontSize: '22px',
       color: isLocked ? UITheme.colors.textMuted : UITheme.colors.textPrimary,
-      fontFamily: '"Press Start 2P", monospace'
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
     container.add(name);
 
     // 关卡描述
-    const desc = this.add.text(-160, 10, stage.description, {
-      fontSize: '12px',
+    const desc = this.add.text(-200, 10, stage.description, {
+      fontSize: '14px',
       color: UITheme.colors.textSecondary,
-      wordWrap: { width: 300 }
+      fontFamily: UITheme.fonts.body,
+      wordWrap: { width: 320 }
     });
     container.add(desc);
 
     // 奖励信息
-    const rewards = this.add.text(180, -10, 
+    const rewards = this.add.text(140, 0,
       `经验: ${stage.rewards.baseExp}\n金币: ${stage.rewards.baseGold}`, {
-      fontSize: '10px',
+      fontSize: '14px',
       color: UITheme.colors.accent,
-      align: 'right'
+      fontFamily: UITheme.fonts.body,
+      align: 'right',
+      lineSpacing: 5
     });
-    rewards.setOrigin(1, 0);
+    rewards.setOrigin(1, 0.5);
     container.add(rewards);
 
     if (!isLocked) {
       // 挑战按钮
-      const button = UIHelper.createPixelButton(
+      const button = UIHelper.createModernButton(
         this,
-        200,
-        20,
+        220,
+        0,
         '挑战',
         () => this.startStage(stage),
-        UITheme.colors.success
+        UITheme.colors.success,
+        100,
+        40
       );
-      button.setScale(0.5);
       container.add(button);
 
       // 悬停效果
@@ -157,7 +167,7 @@ export default class StageSelectScene extends Phaser.Scene {
   private startStage(stage: Stage) {
     // 生成敌人
     const enemy = this.stageManager.generateEnemy(stage);
-    
+
     // 进入战斗
     this.scene.start('CombatScene', {
       stage,

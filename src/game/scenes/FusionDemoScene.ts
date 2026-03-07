@@ -3,6 +3,7 @@ import { Sprite } from '../data/types';
 import { getAllBaseSprites } from '../data/baseSprites';
 import { fuseSprites } from '../systems/FusionSystem';
 import { UITheme, UIHelper } from '../ui/UITheme';
+import { SpriteRenderer } from '../systems/SpriteRenderer';
 
 export default class FusionDemoScene extends Phaser.Scene {
   private sprites: Sprite[] = [];
@@ -28,19 +29,21 @@ export default class FusionDemoScene extends Phaser.Scene {
     graphics.fillRect(0, 0, width, height);
 
     // 标题
-    const title = this.add.text(width / 2, 40, '精灵融合演示', {
-      fontSize: '32px',
-      color: '#FFFFFF',
-      fontFamily: '"Press Start 2P", monospace',
-      stroke: '#000000',
-      strokeThickness: 4
+    const title = this.add.text(width / 2, 60, '精灵融合', {
+      fontSize: '42px',
+      color: UITheme.colors.primary,
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
     title.setOrigin(0.5);
+    title.setShadow(0, 4, '#000000', 10, true, true);
 
     // 说明
-    const info = this.add.text(width / 2, 85, '选择两只精灵进行融合', {
-      fontSize: '14px',
-      color: UITheme.colors.textSecondary
+    const info = this.add.text(width / 2, 110, '选择两只精灵进行进化', {
+      fontSize: '16px',
+      color: UITheme.colors.textSecondary,
+      fontFamily: UITheme.fonts.body,
+      letterSpacing: 2
     });
     info.setOrigin(0.5);
 
@@ -51,20 +54,22 @@ export default class FusionDemoScene extends Phaser.Scene {
     this.displaySprites();
 
     // 返回按钮
-    UIHelper.createPixelButton(
+    UIHelper.createModernButton(
       this,
-      70,
-      30,
+      100,
+      50,
       '返回',
       () => this.scene.start('MenuScene'),
-      UITheme.colors.danger
-    ).setScale(0.6);
+      UITheme.colors.danger,
+      120,
+      40
+    );
   }
 
   private displaySprites() {
     const { width } = this.cameras.main;
-    const startY = 130;
-    const spacing = 90;
+    const startY = 180;
+    const spacing = 110;
 
     this.sprites.forEach((sprite, index) => {
       const y = startY + index * spacing;
@@ -77,81 +82,111 @@ export default class FusionDemoScene extends Phaser.Scene {
     const container = this.add.container(x, y);
 
     // 卡片背景
-    const bg = this.add.rectangle(0, 0, 500, 80, 
-      Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 0.9);
-    bg.setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color);
+    const bg = this.add.graphics();
+    bg.fillStyle(Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, UITheme.alphas.cardBg);
+    bg.fillRoundedRect(-250, -45, 500, 90, 16);
+    bg.lineStyle(2, Phaser.Display.Color.HexStringToColor(UITheme.colors.bgLight).color, 0.5);
+    bg.strokeRoundedRect(-250, -45, 500, 90, 16);
 
-    // 精灵图标
-    const icon = this.add.rectangle(-200, 0, 60, 60, 
-      Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color, 0.3);
-    icon.setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color);
+    // 精灵真实贴图
+    const spriteImage = SpriteRenderer.render(this, -180, 0, sprite, 0.7);
 
     // 精灵名称
-    const name = this.add.text(-150, -20, sprite.name, {
-      fontSize: '18px',
+    const name = this.add.text(-120, -25, sprite.name, {
+      fontSize: '22px',
       color: UIHelper.getElementColor(sprite.element),
-      fontFamily: '"Press Start 2P", monospace'
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
 
-    // 精灵属性
-    const stats = this.add.text(-150, 5, 
-      `Lv.${sprite.level} | ${sprite.element}`, {
-      fontSize: '12px',
-      color: UITheme.colors.textSecondary
+    // 精灵元素标签
+    const stats = this.add.text(-120, 5,
+      `等级 ${sprite.level} | 属性 ${sprite.element.toUpperCase()}`, {
+      fontSize: '14px',
+      color: UITheme.colors.textSecondary,
+      fontFamily: UITheme.fonts.body
     });
 
     // 精灵数值
-    const values = this.add.text(-150, 25, 
-      `HP:${sprite.stats.maxHP} ATK:${sprite.stats.atk} DEF:${sprite.stats.def} SPD:${sprite.stats.spd}`, {
-      fontSize: '10px',
-      color: UITheme.colors.textMuted
+    const values = this.add.text(-120, 25,
+      `HP:${sprite.stats.maxHP}  ATK:${sprite.stats.atk}  DEF:${sprite.stats.def}  SPD:${sprite.stats.spd}`, {
+      fontSize: '12px',
+      color: UITheme.colors.textMuted,
+      fontFamily: UITheme.fonts.body
     });
 
-    container.add([bg, icon, name, stats, values]);
-    container.setSize(500, 80);
-    container.setInteractive({ useHandCursor: true });
+    // 交互区域热区
+    const hitArea = this.add.rectangle(0, 0, 500, 90, 0x000000, 0);
+
+    container.add([bg, spriteImage, name, stats, values, hitArea]);
+    container.setSize(500, 90);
+    hitArea.setInteractive({ useHandCursor: true });
 
     // 交互效果
-    container.on('pointerover', () => {
+    hitArea.on('pointerover', () => {
       this.tweens.add({
         targets: container,
-        scaleX: 1.05,
-        scaleY: 1.05,
-        duration: 150
+        scaleX: 1.03,
+        scaleY: 1.03,
+        duration: 200,
+        ease: 'Sine.easeOut'
       });
-      bg.setFillStyle(Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 1);
+      // 加亮底框与边框
+      bg.clear();
+      bg.fillStyle(Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 0.85);
+      bg.fillRoundedRect(-250, -45, 500, 90, 16);
+
+      const borderColor = this.selectedSprites.includes(sprite)
+        ? Phaser.Display.Color.HexStringToColor(UITheme.colors.accent).color
+        : Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color;
+
+      bg.lineStyle(2, borderColor, 0.9);
+      bg.strokeRoundedRect(-250, -45, 500, 90, 16);
     });
 
-    container.on('pointerout', () => {
-      const isSelected = this.selectedSprites.includes(sprite);
+    hitArea.on('pointerout', () => {
       this.tweens.add({
         targets: container,
         scaleX: 1,
         scaleY: 1,
-        duration: 150
+        duration: 200,
+        ease: 'Sine.easeOut'
       });
-      if (!isSelected) {
-        bg.setFillStyle(Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, 0.9);
-      }
+      this.updateCardBg(sprite, bg);
     });
 
-    container.on('pointerdown', () => {
+    hitArea.on('pointerdown', () => {
       this.selectSprite(sprite, bg);
     });
 
     return container;
   }
 
-  private selectSprite(sprite: Sprite, bg: Phaser.GameObjects.Rectangle) {
+  // 辅助更新卡牌边框高亮
+  private updateCardBg(sprite: Sprite, bg: Phaser.GameObjects.Graphics) {
+    const isSelected = this.selectedSprites.includes(sprite);
+    bg.clear();
+    bg.fillStyle(Phaser.Display.Color.HexStringToColor(UITheme.colors.bgCard).color, UITheme.alphas.cardBg);
+    bg.fillRoundedRect(-250, -45, 500, 90, 16);
+
+    if (isSelected) {
+      bg.lineStyle(3, Phaser.Display.Color.HexStringToColor(UITheme.colors.accent).color, 1);
+    } else {
+      bg.lineStyle(2, Phaser.Display.Color.HexStringToColor(UITheme.colors.bgLight).color, 0.5);
+    }
+    bg.strokeRoundedRect(-250, -45, 500, 90, 16);
+  }
+
+  private selectSprite(sprite: Sprite, bg: Phaser.GameObjects.Graphics) {
     if (this.selectedSprites.includes(sprite)) {
       // 取消选择
       this.selectedSprites = this.selectedSprites.filter(s => s !== sprite);
-      bg.setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(UIHelper.getElementColor(sprite.element)).color);
+      this.updateCardBg(sprite, bg);
     } else {
       if (this.selectedSprites.length < 2) {
         // 选择
         this.selectedSprites.push(sprite);
-        bg.setStrokeStyle(4, Phaser.Display.Color.HexStringToColor(UITheme.colors.accent).color);
+        this.updateCardBg(sprite, bg);
 
         // 如果选择了2只，显示融合按钮
         if (this.selectedSprites.length === 2) {
@@ -164,13 +199,15 @@ export default class FusionDemoScene extends Phaser.Scene {
   private showFuseButton() {
     const { width, height } = this.cameras.main;
 
-    const fuseButton = UIHelper.createPixelButton(
+    const fuseButton = UIHelper.createModernButton(
       this,
       width / 2,
-      height - 50,
-      '🔥 融合！',
+      height - 80,
+      '点击融合',
       () => this.performFusion(),
-      UITheme.colors.primary
+      UITheme.colors.primary,
+      200,
+      50
     );
 
     // 脉冲动画
@@ -200,89 +237,100 @@ export default class FusionDemoScene extends Phaser.Scene {
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
     overlay.setInteractive();
 
-    // 结果卡片
-    const resultCard = UIHelper.createCard(this, width / 2 - 250, height / 2 - 200, 500, 400);
+    // 结果卡片 (更大的圆角、半透明)
+    const resultCard = UIHelper.createCard(this, width / 2 - 280, height / 2 - 250, 560, 500);
 
     // 成功标题
-    const successTitle = this.add.text(width / 2, height / 2 - 150, '✨ 融合成功！', {
-      fontSize: '36px',
+    const successTitle = this.add.text(width / 2, height / 2 - 200, '✨ 融合成功', {
+      fontSize: '42px',
       color: UITheme.colors.accent,
-      fontFamily: '"Press Start 2P", monospace',
-      stroke: '#000000',
-      strokeThickness: 4
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
     successTitle.setOrigin(0.5);
     successTitle.setAlpha(0);
+    successTitle.setShadow(0, 4, '#000000', 8, true, true);
 
     // 标题动画
     this.tweens.add({
       targets: successTitle,
       alpha: 1,
-      scaleX: 1.2,
-      scaleY: 1.2,
-      duration: 500,
+      scaleX: 1.1,
+      scaleY: 1.1,
+      y: '+=10',
+      duration: 600,
       ease: 'Back.easeOut'
     });
 
+    // 融合结果真实贴图显示 (更大一点)
+    const resultSprite = SpriteRenderer.render(this, width / 2, height / 2 - 40, sprite, 1.8);
+
     // 精灵信息
-    const infoY = height / 2 - 80;
-    
+    const infoY = height / 2 + 70;
+
     const name = this.add.text(width / 2, infoY, sprite.name, {
-      fontSize: '24px',
+      fontSize: '32px',
       color: UIHelper.getElementColor(sprite.element),
-      fontFamily: '"Press Start 2P", monospace'
+      fontFamily: UITheme.fonts.title,
+      fontStyle: 'bold'
     });
     name.setOrigin(0.5);
 
-    const details = this.add.text(width / 2, infoY + 40, 
-      `${sprite.element} | Lv.${sprite.level}`, {
+    const details = this.add.text(width / 2, infoY + 40,
+      `Lv.${sprite.level} | 属性: ${sprite.element}`, {
       fontSize: '16px',
-      color: UITheme.colors.textPrimary
+      color: UITheme.colors.textPrimary,
+      fontFamily: UITheme.fonts.body
     });
     details.setOrigin(0.5);
 
-    const stats = this.add.text(width / 2, infoY + 70, 
+    const stats = this.add.text(width / 2, infoY + 70,
       `HP: ${sprite.stats.maxHP} | ATK: ${sprite.stats.atk} | DEF: ${sprite.stats.def} | SPD: ${sprite.stats.spd}`, {
       fontSize: '14px',
-      color: UITheme.colors.textSecondary
+      color: UITheme.colors.textSecondary,
+      fontFamily: UITheme.fonts.body
     });
     stats.setOrigin(0.5);
 
-    const growth = this.add.text(width / 2, infoY + 100, 
-      `成长值: ${sprite.stats.growthValue.toFixed(1)} | 融合次数: ${sprite.fusionCount}`, {
-      fontSize: '12px',
-      color: UITheme.colors.textMuted
-    });
-    growth.setOrigin(0.5);
-
     // 技能列表
-    const skillsTitle = this.add.text(width / 2, infoY + 130, '技能:', {
+    const skillsTitle = this.add.text(width / 2, infoY + 110, '一 技能列表 一', {
       fontSize: '16px',
-      color: UITheme.colors.accent
+      color: UITheme.colors.accent,
+      fontFamily: UITheme.fonts.title
     });
     skillsTitle.setOrigin(0.5);
 
     sprite.skills.forEach((skill, index) => {
       const skillText = `${skill.name} (${skill.power}) ${skill.isSignature ? '⭐' : ''}`;
-      const skillLabel = this.add.text(width / 2, infoY + 160 + index * 25, skillText, {
-        fontSize: '12px',
-        color: UITheme.colors.textPrimary
+      const skillLabel = this.add.text(width / 2, infoY + 140 + index * 25, skillText, {
+        fontSize: '14px',
+        color: UITheme.colors.textPrimary,
+        fontFamily: UITheme.fonts.body
       });
       skillLabel.setOrigin(0.5);
     });
 
     // 关闭按钮
-    const closeButton = UIHelper.createPixelButton(
+    const closeButton = UIHelper.createModernButton(
       this,
       width / 2,
-      height / 2 + 160,
+      height / 2 + 300,
       '关闭',
       () => {
         overlay.destroy();
+        resultCard.destroy();
+        successTitle.destroy();
+        resultSprite.destroy();
+        name.destroy();
+        details.destroy();
+        stats.destroy();
+        skillsTitle.destroy();
         this.selectedSprites = [];
         this.scene.restart();
       },
-      UITheme.colors.secondary
+      UITheme.colors.secondary,
+      140,
+      44
     );
   }
 }
